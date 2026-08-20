@@ -8,6 +8,8 @@ A parcel delivery management system built with PHP and MySQL. It provides an adm
 ![PHP](https://img.shields.io/badge/PHP-8%2B-777BB4?logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-4479A1?logo=mysql&logoColor=white)
 
+**在线演示 / Live Demo:** [https://weihern.kolejsynergy.com/Delivery-System/Delivery-System/](https://weihern.kolejsynergy.com/Delivery-System/Delivery-System/)
+
 ## 功能特性 / Features
 
 - **双角色系统** — 管理员（Admin）与骑手（Rider）独立面板
