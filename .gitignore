@@ -1,0 +1,10 @@
+# Local database credentials
+config/database.php
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

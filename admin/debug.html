@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>调试 - 包裹数据检查</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .error { color: red; }
+        .success { color: green; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>🔧 骑手系统调试面板</h1>
+    
+    <div class="section">
+        <h2>1️⃣ 数据库中的数据</h2>
+        <div id="db-status">加载中...</div>
+    </div>
+
+    <div class="section">
+        <h2>2️⃣ 骑手配置 (RIDER_CONFIG)</h2>
+        <div id="config-status">需要在骑手页面打开此窗口</div>
+        <a href="../rider/index.php" target="rider">打开骑手仪表板</a>
+        <button onclick="checkRiderConfig()">检查配置</button>
+    </div>
+
+    <div class="section">
+        <h2>3️⃣ 浏览器控制台日志</h2>
+        <p>按 <code>F12</code> 打开开发者工具，查看 Console 标签页的日志信息</p>
+    </div>
+
+    <div class="section">
+        <h2>4️⃣ 快速操作</h2>
+        <button onclick="insertTestData()">插入测试数据</button>
+        <button onclick="clearAllData()">清空所有数据</button>
+        <div id="action-result"></div>
+    </div>
+
+    <script>
+        // 检查数据库数据
+        async function checkDatabase() {
+            try {
+                const resp = await fetch('check_data.php');
+                const data = await resp.json();
+                
+                let html = '';
+                
+                if (data.total_parcels === 0) {
+                    html = '<p class="error">❌ 数据库中没有包裹数据！</p>';
+                } else {
+                    html = `<p class="success">✅ 找到 ${data.total_parcels} 个包裹</p>`;
+                    
+                    html += '<h3>分配给骑手ID=2的包裹 (' + data.assigned_to_rider_2.length + '个)</h3>';
+                    if (data.assigned_to_rider_2.length > 0) {
+                        html += '<table><tr><th>ID</th><th>Tracking</th><th>地址</th><th>状态</th></tr>';
+                        data.assigned_to_rider_2.forEach(p => {
+                            html += `<tr><td>${p.id}</td><td>${p.tracking_number}</td><td>${p.address}</td><td>${p.status}</td></tr>`;
+                        });
+                        html += '</table>';
+                    } else {
+                        html += '<p class="error">没有分配的包裹</p>';
+                    }
+                    
+                    html += '<h3>可用包裹 (' + data.available_parcels.length + '个)</h3>';
+                    if (data.available_parcels.length > 0) {
+                        html += '<table><tr><th>ID</th><th>Tracking</th><th>地址</th><th>状态</th></tr>';
+                        data.available_parcels.forEach(p => {
+                            html += `<tr><td>${p.id}</td><td>${p.tracking_number}</td><td>${p.address}</td><td>${p.status}</td></tr>`;
+                        });
+                        html += '</table>';
+                    } else {
+                        html += '<p class="error">没有可用包裹</p>';
+                    }
+                }
+                
+                document.getElementById('db-status').innerHTML = html;
+            } catch (e) {
+                document.getElementById('db-status').innerHTML = '<p class="error">❌ 无法检查数据库: ' + e.message + '</p>';
+            }
+        }
+
+        function checkRiderConfig() {
+            const riderWindow = window.open('../rider/index.php', 'rider');
+            setTimeout(() => {
+                if (riderWindow && riderWindow.RIDER_CONFIG) {
+                    let html = '<pre>' + JSON.stringify(riderWindow.RIDER_CONFIG, null, 2) + '</pre>';
+                    document.getElementById('config-status').innerHTML = html;
+                } else {
+                    document.getElementById('config-status').innerHTML = '<p class="error">❌ 无法访问RIDER_CONFIG（可能跨域限制）</p>';
+                }
+            }, 1000);
+        }
+
+        async function insertTestData() {
+            try {
+                const resp = await fetch('insert_test_data.php');
+                const text = await resp.text();
+                document.getElementById('action-result').innerHTML = '<pre>' + text + '</pre>';
+                setTimeout(checkDatabase, 1000);
+            } catch (e) {
+                document.getElementById('action-result').innerHTML = '<p class="error">❌ 错误: ' + e.message + '</p>';
+            }
+        }
+
+        async function clearAllData() {
+            if (!confirm('确定要删除所有包裹数据吗？')) return;
+            
+            try {
+                const resp = await fetch('clear_data.php');
+                const text = await resp.text();
+                document.getElementById('action-result').innerHTML = '<pre>' + text + '</pre>';
+                setTimeout(checkDatabase, 1000);
+            } catch (e) {
+                document.getElementById('action-result').innerHTML = '<p class="error">❌ 错误: ' + e.message + '</p>';
+            }
+        }
+
+        // 页面加载时检查数据库
+        window.addEventListener('load', checkDatabase);
+    </script>
+</body>
+</html>

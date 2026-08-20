@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>搜索API调试</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        textarea { width: 100%; height: 150px; font-family: monospace; }
+        button { padding: 10px 20px; font-size: 16px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔍 搜索 API 调试工具</h1>
+    
+    <div class="section">
+        <h2>测试搜索查询</h2>
+        <input type="text" id="searchInput" value="plaza" style="width: 300px; padding: 10px; font-size: 16px;">
+        <button onclick="testSearch()">搜索</button>
+        
+        <h3>结果：</h3>
+        <textarea id="results" readonly></textarea>
+    </div>
+
+    <div class="section">
+        <h2>测试多个查询</h2>
+        <button onclick="testMultipleQueries()">运行测试</button>
+        
+        <h3>日志：</h3>
+        <textarea id="log" readonly></textarea>
+    </div>
+
+    <script>
+        const logEl = document.getElementById('log');
+        const resultsEl = document.getElementById('results');
+        
+        function log(msg) {
+            logEl.value += msg + '\n';
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function testSearch() {
+            const query = document.getElementById('searchInput').value;
+            resultsEl.value = '搜索中: ' + query + '\n\n';
+            
+            try {
+                const resp = await fetch('../api/search.php?q=' + encodeURIComponent(query));
+                const data = await resp.json();
+                resultsEl.value = JSON.stringify(data, null, 2);
+            } catch (e) {
+                resultsEl.value = '❌ 错误: ' + e.message;
+            }
+        }
+
+        async function testMultipleQueries() {
+            logEl.value = '';
+            
+            const queries = [
+                'Plaza',
+                'Plaza Gurney',
+                'George Town',
+                'Penang',
+                'Pulau Tikus',
+                'Plaza Gurney 170 Persiaran Gurney Pulau Tikus'
+            ];
+
+            for (const q of queries) {
+                log(`\n========== 查询: "${q}" ==========`);
+                
+                try {
+                    const resp = await fetch('../api/search.php?q=' + encodeURIComponent(q));
+                    const data = await resp.json();
+                    
+                    if (!Array.isArray(data)) {
+                        log('❌ 响应不是数组: ' + JSON.stringify(data));
+                        continue;
+                    }
+                    
+                    if (data.length === 0) {
+                        log('⚠️  没有结果');
+                        continue;
+                    }
+                    
+                    log(`✅ 找到 ${data.length} 个结果:`);
+                    data.forEach((r, idx) => {
+                        log(`  [${idx}] ${r.display_name} (${r.lat}, ${r.lon})`);
+                    });
+                } catch (e) {
+                    log('❌ 错误: ' + e.message);
+                }
+            }
+            
+            log('\n========== 测试完成 ==========');
+        }
+    </script>
+</body>
+</html>
